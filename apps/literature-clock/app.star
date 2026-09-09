@@ -472,7 +472,7 @@ def zone_offset_at(zone, t):
 
 def local_minutes(ctx):
     """Minutes since the epoch on the viewer's wall clock."""
-    zone = str(ctx.inputs.get("zone", DEFAULT_ZONE)).strip().upper()
+    zone = str(ctx.inputs.get("timezone", DEFAULT_ZONE)).strip().upper()
     t = ctx.now.unix // 60
     return t + zone_offset_at(zone, t)
 
