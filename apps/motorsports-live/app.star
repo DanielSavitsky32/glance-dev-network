@@ -534,11 +534,21 @@ def eastern_offset_seconds(ctx):
 
 _now_minutes = 0
 
+# The dropdown offers the four US zones by name. The table above is keyed by
+# IANA zone, so the name is mapped across; an older saved IANA value passes
+# through untouched.
+US_ZONES = {"EASTERN": "America/New_York", "CENTRAL": "America/Chicago",
+            "MOUNTAIN": "America/Denver", "PACIFIC": "America/Los_Angeles"}
+
+def us_zone(raw):
+    z = str(raw).strip()
+    return US_ZONES.get(z.upper(), z)
+
 def panel_offset_seconds(ctx):
     # A timezone dropdown (see manifest) is a direct IANA-zone lookup --
     # simpler and one fewer network hop than the old zip -> lat/lon
     # (zippopotam.us) -> coordinate -> UTC-offset (timeapi.io) chain.
-    return zone_offset_at(str(safe_input(ctx, "timezone", "America/New_York")).strip(),
+    return zone_offset_at(us_zone(safe_input(ctx, "timezone", "EASTERN")),
                           ctx.now.unix // 60) * 60
 
 def _pad2(n):
