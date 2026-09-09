@@ -90,6 +90,8 @@ def local_when(ctx, zone):
     z = str(zone).upper().strip()
     if z == "":
         z = "US CENTRAL"
+    if z in ["EASTERN", "CENTRAL", "MOUNTAIN", "PACIFIC"]:
+        z = "US " + z      # the four-way US dropdown; the table keys carry the prefix
     std = STD_OFF.get(z, -6)
     unix = int(ctx.now.unix) + std * 3600
     days = unix // 86400
