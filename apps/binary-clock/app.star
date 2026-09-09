@@ -146,7 +146,9 @@ def bits(c, ctx):
 
     c.fill("#05070E")
     r = 2 if c.width >= 128 else 1
-    step = 2 * r + 3
+    # 64 wide: an 8px pitch so the H/M/S labels (5 tall) sit clear of each
+    # other with 3 rows between, each still centered on its row of dots.
+    step = 2 * r + 3 if c.width >= 128 else 8
     y0 = (c.height - 3 * step) // 2 + r
 
     for i in range(3):
