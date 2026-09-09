@@ -113,8 +113,8 @@ DATE_MARGIN = 5
 
 # The two zones Florida actually uses: (standard UTC offset, abbreviations).
 ZONES = {
-    "peninsula": (-5, "EST", "EDT"),
-    "panhandle": (-6, "CST", "CDT"),
+    "peninsula": (-5, "ET", "ET"),
+    "panhandle": (-6, "CT", "CT"),
 }
 
 # ---------- input ----------
@@ -239,7 +239,7 @@ def main(c, ctx):
 
     # ----- AM/PM over the zone, both left-justified in one column -----
     # LABEL_X = 108. The column's widest string is a 3-letter zone at 17px in
-    # 5x7 (EST/EDT/CST/CDT all measure 17), so it ends at x=124 with 3px to
+    # 5x7 (ET/CT measure 11; the old EST/EDT measured 17), so it ends by x=124 with 3px to
     # spare; AM/PM is 13px in 6x8. The pair is centered against the clock's 20
     # rows, which leaves the lower label ending at y=27 -- 3 rows clear of the
     # day bar at y=31.
