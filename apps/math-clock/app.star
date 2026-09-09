@@ -178,7 +178,9 @@ def solve(c, ctx):
         c.text("SOLVE THE TIME", c.width // 2, 1, font = "4x5",
                color = "#4A4A66", align = "center")
     else:
-        c.text_fit(hh, c.width // 2, 3, ["10x16", "7x12", "6x8"],
+        # 7x12 on two rows with a 2px gap, 3px clear top and bottom: 10x16
+        # ran the rows into each other and off the bottom edge.
+        c.text_fit(hh, c.width // 2, 3, ["7x12", "6x8"],
                    color = "#FFD84A", align = "center", maxw = c.width - 4)
-        c.text_fit(mm, c.width // 2, 18, ["10x16", "7x12", "6x8"],
+        c.text_fit(mm, c.width // 2, 17, ["7x12", "6x8"],
                    color = "#7FD4FF", align = "center", maxw = c.width - 4)
