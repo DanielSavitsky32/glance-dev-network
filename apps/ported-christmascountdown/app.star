@@ -31,9 +31,66 @@ MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 def is_leap(y):
     return (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0)
 
-def days_until_christmas(ctx):
+# The time zone is a four-way US dropdown resolved right here: no zip lookup
+# and no time API, so every panel in a zone shares one render and a dead API
+# can never cost the clock its offset.
+#
+# zone -> standard offset in minutes east of UTC. All four observe US daylight
+# saving: 2nd Sunday in March 02:00 -> 1st Sunday in November 02:00.
+US_ZONES = {"EASTERN": -300, "CENTRAL": -360, "MOUNTAIN": -420, "PACIFIC": -480,
+            "America/New_York": -300, "America/Chicago": -360,
+            "America/Denver": -420, "America/Los_Angeles": -480}
+
+
+def _dfc(y, m, d):
+    """Days since the Unix epoch (Howard Hinnant's algorithm)."""
+    yy = y - 1 if m <= 2 else y
+    era = (yy if yy >= 0 else yy - 399) // 400
+    yoe = yy - era * 400
+    mp = m - 3 if m > 2 else m + 9
+    doy = (153 * mp + 2) // 5 + d - 1
+    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    return era * 146097 + doe - 719468
+
+
+def _nth_sunday(y, m, n):
+    """Day of the month of the nth Sunday. 1970-01-01 was a Thursday."""
+    wd = (_dfc(y, m, 1) + 4) % 7      # 0 = Sunday
+    return 1 + (7 - wd) % 7 + 7 * (n - 1)
+
+
+def offset_hours(ctx):
+    """UTC offset for the chosen US zone, daylight saving already applied."""
+    zone = str(ctx.inputs.get("timezone", "EASTERN")).strip()
+    std = US_ZONES.get(zone.upper(), US_ZONES.get(zone, -300))
+    t = ctx.now.unix // 60
     y = ctx.now.year
-    today = ctx.now.yday
+    start = _dfc(y, 3, _nth_sunday(y, 3, 2)) * 1440 + 120 - std
+    end = _dfc(y, 11, _nth_sunday(y, 11, 1)) * 1440 + 120 - std - 60
+    off = std + 60 if (t >= start and t < end) else std
+    return off / 60.0
+
+
+def _cfd(z):
+    """Civil [y, m, d] from days since the epoch (Howard Hinnant)."""
+    z += 719468
+    era = (z if z >= 0 else z - 146096) // 146097
+    doe = z - era * 146097
+    yoe = (doe - doe // 1460 + doe // 36524 - doe // 146096) // 365
+    y = yoe + era * 400
+    doy = doe - (365 * yoe + yoe // 4 - yoe // 100)
+    mp = (5 * doy + 2) // 153
+    d = doy - (153 * mp + 2) // 5 + 1
+    m = mp + 3 if mp < 10 else mp - 9
+    return [y + (1 if m <= 2 else 0), m, d]
+
+
+def days_until_christmas(ctx):
+    # Today on the reader's wall clock, so the sleeps flip at local midnight.
+    days = (ctx.now.unix + int(offset_hours(ctx) * 3600)) // 86400
+    ymd = _cfd(days)
+    y = ymd[0]
+    today = days - _dfc(y, 1, 1) + 1
     # day-of-year of Dec 25 this year
     xmas = 25
     for i in range(11):
