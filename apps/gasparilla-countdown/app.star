@@ -30,12 +30,41 @@ def fit_font(c, text, options, maxw):
             return f
     return options[len(options) - 1]
 
+# ctx.now is UTC. The day flips at midnight Eastern, which is where this event
+# lives, so the date is shifted by the Eastern offset with US daylight saving
+# applied (2nd Sunday in March 02:00 -> 1st Sunday in November 02:00).
+
+
+def _edfc(y, m, d):
+    yy = y - 1 if m <= 2 else y
+    era = (yy if yy >= 0 else yy - 399) // 400
+    yoe = yy - era * 400
+    mp = m - 3 if m > 2 else m + 9
+    doy = (153 * mp + 2) // 5 + d - 1
+    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    return era * 146097 + doe - 719468
+
+
+def _enth_sunday(y, m, n):
+    wd = (_edfc(y, m, 1) + 4) % 7      # 0 = Sunday; 1970-01-01 was a Thursday
+    return 1 + (7 - wd) % 7 + 7 * (n - 1)
+
+
+def eastern_offset_minutes(ctx):
+    std = -300
+    t = ctx.now.unix // 60
+    y = ctx.now.year
+    start = _edfc(y, 3, _enth_sunday(y, 3, 2)) * 1440 + 120 - std
+    end = _edfc(y, 11, _enth_sunday(y, 11, 1)) * 1440 + 120 - std - 60
+    return std + 60 if (t >= start and t < end) else std
+
+
 def countdown(c, ctx):
     accent = ctx.inputs.get("accent", "#FFC300")
 
     c.fill("black")
 
-    today = days_from_civil(ctx.now.year, ctx.now.month, ctx.now.day)
+    today = (ctx.now.unix + eastern_offset_minutes(ctx) * 60) // 86400     # Tampa is Eastern
     event = days_from_civil(EVENT_DATE[0], EVENT_DATE[1], EVENT_DATE[2])
     n = event - today
 
