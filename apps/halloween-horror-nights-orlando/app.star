@@ -417,7 +417,7 @@ def house_cards(c, ctx, title, lo, hi):
             c.text("CHECK BACK SHORTLY" if lo == 0 else "SEE PAGE 1", MIDX, 20,
                    font = "4x5", color = ORANGE, align = "center")
         elif st["state"] == "tonight":
-            c.text("HOUSES OPEN AT GATES", MIDX, 12, font = "4x5", color = DIM,
+            c.text("GATES OPEN AT", MIDX, 12, font = "4x5", color = DIM,
                    align = "center")
             c.text(st["hours"][0], MIDX, 20, font = "6x8", color = ORANGE,
                    align = "center")
