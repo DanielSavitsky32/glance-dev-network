@@ -363,7 +363,7 @@ def zone_offset_at(zone, t):
 
 def local_hm(ctx):
     """[hour, minute] on the viewer's wall clock."""
-    zone = str(ctx.inputs.get("zone", DEFAULT_ZONE)).strip().upper()
+    zone = str(ctx.inputs.get("timezone", DEFAULT_ZONE)).strip().upper()
     t = ctx.now.unix // 60
     t += zone_offset_at(zone, t)
     tod = t % 1440
