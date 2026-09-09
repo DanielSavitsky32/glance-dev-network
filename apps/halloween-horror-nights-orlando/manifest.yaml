@@ -1,0 +1,23 @@
+gdn: 1
+id: halloween-horror-nights-orlando
+version: 0.1.0
+name: Halloween Horror Nights Orlando
+author: maniac782
+description: Universal Studios Florida's Halloween Horror Nights (Orlando only). A haunted-house-on-a-hill splash opens it, then tonight's gates or a countdown to opening night, then every haunted house's live standby wait listed across two more pages.
+category: Lifestyle
+entry: app.star
+
+width: 192
+height: 32
+
+# The event schedule barely moves and house waits move every few minutes;
+# 15 minutes keeps both honest without hammering the feed.
+refresh: 900
+
+pages:
+  - splash
+  - tonight
+  - houses1
+  - houses2
+
+inputs: []
