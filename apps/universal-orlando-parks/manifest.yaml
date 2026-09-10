@@ -1,0 +1,24 @@
+gdn: 1
+id: universal-orlando-parks
+version: 0.1.0
+name: Universal Orlando Parks
+author: glance-led-dev
+description: One page per Universal Orlando park with its landmark in pixel art, a crowd meter, the three longest standby waits right now, and when the gates close. After hours it shows today's and tomorrow's hours, Early Park Admission, and Halloween Horror Nights when it is on.
+category: Lifestyle
+entry: app.star
+
+width: 192
+height: 32
+
+# Standby waits move every few minutes; 15 minutes keeps them honest without
+# hammering the feed. The live fetch's ttl in app.star moves with this.
+refresh: 900
+
+pages:
+  - home
+  - studios
+  - islands
+  - epic
+  - volcano_bay
+
+inputs: []

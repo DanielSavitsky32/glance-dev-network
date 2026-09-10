@@ -163,6 +163,53 @@ STATIONS = {
 }
 
 
+# NOAA hands back predictions on the station's own wall clock (lst_ldt) while
+# ctx.now is UTC, so "now" has to be put on the station's clock before the two
+# are compared. The zone follows the state in the station label; the standard
+# offset is minutes east of UTC and the flag says whether US daylight saving
+# applies (2nd Sunday in March 02:00 -> 1st Sunday in November 02:00).
+STATE_ZONE = {
+    "AK": [-540, True], "HI": [-600, False], "AS": [-660, False],
+    "GU": [600, False], "MH": [720, False], "UM": [720, False],
+    "PR": [-240, False], "VI": [-240, False], "BM": [-240, True],
+    "CA": [-480, True], "OR": [-480, True], "WA": [-480, True],
+    "TX": [-360, True], "LA": [-360, True], "MS": [-360, True],
+    "AL": [-360, True],
+}
+# Florida's panhandle gauges keep Central time.
+CENTRAL_IDS = ["8729840", "8729108", "8729210", "8728690"]
+
+
+def _zdfc(y, m, d):
+    yy = y - 1 if m <= 2 else y
+    era = (yy if yy >= 0 else yy - 399) // 400
+    yoe = yy - era * 400
+    mp = m - 3 if m > 2 else m + 9
+    doy = (153 * mp + 2) // 5 + d - 1
+    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    return era * 146097 + doe - 719468
+
+
+def _znth_sunday(y, m, n):
+    wd = (_zdfc(y, m, 1) + 4) % 7      # 0 = Sunday; 1970-01-01 was a Thursday
+    return 1 + (7 - wd) % 7 + 7 * (n - 1)
+
+
+def station_offset_minutes(state, sid, now):
+    """Minutes east of UTC on the station's clock at the UTC instant `now`."""
+    z = STATE_ZONE.get(str(state).upper(), [-300, True])
+    if str(sid) in CENTRAL_IDS:
+        z = [-360, True]
+    std, dst = z[0], z[1]
+    if not dst:
+        return std
+    t = now.unix // 60
+    y = now.year
+    start = _zdfc(y, 3, _znth_sunday(y, 3, 2)) * 1440 + 120 - std
+    end = _zdfc(y, 11, _znth_sunday(y, 11, 1)) * 1440 + 120 - std - 60
+    return std + 60 if (t >= start and t < end) else std
+
+
 def resolve_station(ctx):
     """Station id for the picked place.
 
@@ -200,9 +247,13 @@ def tides(c, ctx):
         nodata(c, "NO PREDICTIONS", "CHECK STATION")
         return
 
-    # Station time is local; ctx.now is UTC, so compare on clock time only and
-    # fall back to the first entry once the day's list is exhausted.
-    nowhm = fmt.pad(ctx.now.hour) + ":" + fmt.pad(ctx.now.minute)
+    # Station time is local; ctx.now is UTC. Shift now onto the station's
+    # clock (state -> zone, DST applied) before comparing, and fall back to the
+    # last entry once the day's list is exhausted.
+    label = str(ctx.inputs.get("station", "")).strip().upper()
+    state = label[len(label) - 2:] if len(label) > 3 and label[len(label) - 3] == " " else ""
+    lmin = (ctx.now.unix // 60 + station_offset_minutes(state, station, ctx.now)) % 1440
+    nowhm = fmt.pad(lmin // 60) + ":" + fmt.pad(lmin % 60)
     nxt = None
     for row in rows:
         t = str(row.get("t", ""))

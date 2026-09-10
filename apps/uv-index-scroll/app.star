@@ -98,7 +98,7 @@ def now(c, ctx):
                  params = {"latitude": str(g[0]), "longitude": str(g[1]),
                            "hourly": "uv_index", "daily": "uv_index_max",
                            "timezone": "auto", "forecast_days": "1"},
-                 ttl_seconds = 3600)
+                 ttl_seconds = 1800)      # in step with refresh: 1800
     if r["status_code"] != 200 or not r["json"]:
         nodata(c, "NO UV DATA", "FEED UNREACHABLE")
         return
@@ -114,13 +114,18 @@ def now(c, ctx):
     cur = 0.0
     if len(hourly) > hour and hourly[hour] != None:
         cur = float(hourly[hour])
+    # The index is the reading for this hour, so say which hour: "UV 2PM".
+    h12 = hour % 12
+    if h12 == 0:
+        h12 = 12
+    hlabel = str(h12) + ("AM" if hour < 12 else "PM")
 
     b = band(cur)
     burn = 0 if cur < 1 else int(200 / cur)
 
     c.fill("#0C0A06")
     if c.width >= 128:
-        c.text("UV INDEX", 6, 2, font = "5x7", color = "#7A6A48")
+        c.text("UV INDEX " + hlabel, 6, 2, font = "5x7", color = "#7A6A48")
         c.text(str(int(cur * 10) / 10.0), 6, 10, font = "16x20", color = b[2])
         c.text(b[1], c.width - 6, 3, font = "10x16", color = b[2],
                align = "right")
@@ -131,7 +136,7 @@ def now(c, ctx):
                    color = "#C8B890")
     else:
         # 0-4 label | 5-24 figure | 26-30 band, row 31 left as margin.
-        c.text("UV", c.width // 2, 0, font = "4x5", color = "#7A6A48",
+        c.text("UV " + hlabel, c.width // 2, 0, font = "4x5", color = "#7A6A48",
                align = "center")
         c.text(str(int(cur)), c.width // 2, 5, font = "16x20", color = b[2],
                align = "center")
