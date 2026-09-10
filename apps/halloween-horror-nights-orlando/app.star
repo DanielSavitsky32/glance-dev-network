@@ -1,66 +1,210 @@
 # Halloween Horror Nights Orlando for a Glance SCROLL panel (192x32).
 #
 # DESIGN. One park (Universal Studios Florida), one event, four pages, no
-# mascot (no licensed icons — Jack the Clown and Dr. Oddfellow are
-# Universal's trademarks). A masthead bar spells the event name in a
-# state-colored bar across the top of every page. Page 1 is the splash: a
-# cold moon over an uneven row of tombstones, silhouetted in front of it —
-# scenery doing the identifying instead of a friendly face. Page 2's content
-# band is one big bold hero: tonight's gates (open now / opens at) or, on a
-# dark night, a countdown to the next one. Pages 3 and 4 split all ten
-# haunted houses five to a page, plain-listed two roomy columns wide: real
-# name left, wait time colored right, no boxes or pills. Two columns instead
-# of three gives each name about 50% more room, so almost all show in full.
-# Off nights the house pages don't fake a wait grid full of dashes — they
-# say plainly that the houses open at gates. Every page sits on a near-black
-# dusk gradient instead of flat black, for a little mood without giving up
-# any contrast.
+# licensed mascot (Jack the Clown and Dr. Oddfellow are Universal's
+# trademarks) - so the scenery does the identifying. Page 1 is the title
+# card: a moonlit haunted mansion on the left with its windows lit, the
+# event name across the middle in HHN orange, and on the right a dead tree,
+# a graveyard and bats crossing a full moon, with fog rolling along the
+# bottom. Every other page opens with an orange HORROR NIGHTS chip, like its
+# sibling Universal Orlando Parks app opens each park page with the park's
+# chip. Page 2 keeps the mansion on the left and puts tonight's answer in
+# the middle as one big bold word: OPEN NOW, TONIGHT, a count of nights
+# until opening night, or OFF SEASON. Pages 3 and 4 split the ten haunted
+# houses five to a page in two columns, each house wearing its standby
+# minutes in a pill colored by how much it hurts. On nights with no event
+# the house pages keep the mansion and say plainly when the gates open.
+# Black ground throughout: it is the cheapest contrast there is, and the
+# orange, the amber windows and the pale moon all read from across a room.
 #
-# Data: api.themeparks.wiki. /schedule's TICKETED_EVENT entries are individual
-# HHN nights (one per date, not a season range), so "is it on tonight" and
-# "how many nights until it is" both fall out of the same list. /live's
-# haunted-house attractions carry externalId "hhn_haunted_house_*" with a
-# normal STANDBY queue once the event is running. One park, two fetches.
+# Data: api.themeparks.wiki. /schedule's TICKETED_EVENT entries are
+# individual HHN nights (one per date, not a season range), so "is it on
+# tonight" and "how many nights until it is" both fall out of the same list.
+# /live's haunted-house attractions carry externalId "hhn_haunted_house_*"
+# with a normal STANDBY queue once the event is running. One park, two
+# fetches. Eastern time is worked out here with no network call.
 
 API = "https://api.themeparks.wiki/v1/entity/"
 PARK_ID = "eb3f4560-2383-4a36-9152-6b3e5ed6bc57"   # Universal Studios Florida
 TTL = 900                 # matches refresh: in the manifest
 
-TITLE = "HALLOWEEN HORROR NIGHTS ORLANDO"   # this app is Orlando-only
-
 INK = "#F4F7FF"
 DIM = "#6E7A94"
 ORANGE = "#FF6A00"        # HHN's own accent
-PURPLE = "#7521F9"
+PURPLE = "#A86BFF"        # the countdown color, and the off-season one
 OFFLINE = "#3C4043"
+STRUCT = "darkgray"
 
-NIGHT_A = "#07050C"       # near-black, a hair of purple in it
-NIGHT_B = "#15101F"       # ...fading into a slightly lighter dusk at the
-                          # bottom - a mood wash, never bright enough to
-                          # cost the text any contrast.
-
-def night(c):
-    c.gradient_rect(0, 0, c.width - 1, c.height - 1, NIGHT_A, NIGHT_B,
-                     horizontal = False)
-
-EDGEL = 6                 # 6 px clear at both outer edges, like its sibling app
+# ---- geometry ----------------------------------------------------------------
+# 6 px clear at both outer edges (x 6..185), like the sibling app. Chip row
+# y 0..6, content band y 8..31. The small mansion stands at x 6..31.
+EDGEL = 6
 RZ_R = 185
-MIDX = (EDGEL + RZ_R) // 2
+ARTX = 6
+ARTY = 8
+ZONEL = 36                # text zone to the right of the small mansion
+MIDX = (ZONEL + RZ_R) // 2
 
 STATE_COLOR = {"open": "green", "tonight": ORANGE, "countdown": PURPLE,
-               "offseason": DIM}
+               "offseason": PURPLE}
 
-def masthead(c, text, color):
-    """A state-colored bar edge to edge (its own solid block is frame enough
-    to read as this app's own unit, so it doesn't need the 6px safe-zone
-    inset), bold enough on its own that the page needs no pictorial logo
-    under it. Plain contrasting text, no stroke: the bar is a flat fill, not
-    artwork, so a stroke only added a boxed-per-word look instead of
-    contrast. Centered on c.width, not the content zone, so it's dead center
-    on the bar itself."""
-    c.rect(0, 0, c.width - 1, 7, fill = color)
-    ink = "white" if color in (PURPLE, DIM, OFFLINE) else "black"
-    c.text(text, c.width // 2, 1, font = "4x5", color = ink, align = "center")
+# ---- pixel art ---------------------------------------------------------------
+# Moonlit purple-grays for the mansion: a silhouette drawn in near-black is
+# invisible on real LED hardware, so the walls are a clear lavender-gray, the
+# shadow side a step darker, the roofs lighter still, and the windows amber.
+MANSION_LEG = {"M": "#6A6390", "m": "#3E3858", "R": "#8C86B0", "r": "#3E3858",
+               "W": "#FFC94A", "D": "#0E0A16", "G": "#2A2440"}
+
+# The title-card mansion: a gabled main house with a porch and a tall
+# tower, 34 x 26.
+MANSION = """
+..........................RR......
+.........................RRRR.....
+........................RRRRRR....
+.......................RRRRRRRR...
+........mm............RRRRRRRRRR..
+........mm...........rrrrrrrrrrrr.
+........mm...R.........MMMMMMMmm..
+........mm..RRR........MMMMMMMmm..
+........mm.RRRRR.......MMMMMMMmm..
+..........RRRRRRR......MMMWWWMmm..
+.........RRRRRRRRR.....MMMWWWMmm..
+........RRRRRRRRRRR....MMMWWWMmm..
+.......RRRRRRRRRRRRR...MMMMMMMmm..
+......rrrrrrrrrrrrrrr..MMMMMMMmm..
+.......MMWWMMMMWWMm....MMMMMMMmm..
+.......MMWWMMMMWWMm....MMMMMMMmm..
+.......MMMMMMMMMMMm....MMMWWWMmm..
+.......MMMMMMMMMMMm....MMMWWWMmm..
+.....rrrrrrrrrrrrrrrr..MMMWWWMmm..
+.....m.MMMMMDDMMMMm.m..MMMMMMMmm..
+.....m.MMMMMDDMMMMm.m..MMMMMMMmm..
+.....m.MMMMMDDMMMMm.m..MMMMMMMmm..
+.....m.MMMMMDDMMMMm.m..MMMMMMMmm..
+.....m.MMMMMDDMMMMm.m..MMMMMMMmm..
+....mmmmmmmmmmmmmmmmmm.MMMMMMMmm..
+GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG
+"""
+
+# The same house at page size, 26 x 23, standing on the content band.
+MANSION_S = """
+....................RR....
+...................RRRR...
+..................RRRRRR..
+.................RRRRRRRR.
+......mm........rrrrrrrrrr
+......mm..R.......MMMMMmm.
+......mm.RRR......MMMMMmm.
+........RRRRR.....MMWWMmm.
+.......RRRRRRR....MMWWMmm.
+......RRRRRRRRR...MMMMMmm.
+.....rrrrrrrrrrr..MMMMMmm.
+......MWWMMWWMm...MMMMMmm.
+......MWWMMWWMm...MMMMMmm.
+......MMMMMMMMm...MMWWMmm.
+......MMMMMMMMm...MMWWMmm.
+....rrrrrrrrrrrr..MMMMMmm.
+....m.MMMDDMMMmm..MMMMMmm.
+....m.MMMDDMMMmm..MMMMMmm.
+....m.MMMDDMMMmm..MMMMMmm.
+....m.MMMDDMMMmm..MMMMMmm.
+....m.MMMDDMMMmm..MMMMMmm.
+...mmmmmmmmmmmmmm.MMMMMmm.
+GGGGGGGGGGGGGGGGGGGGGGGGGG
+"""
+
+TREE_LEG = {"N": "#5E4E78"}
+DEAD_TREE = """
+N....N.......
+.N...N...N...
+..N.N...N....
+...NN..N.....
+N...NN.N.....
+.N..NNN......
+..NNNN..N....
+....NN.N.....
+....NNN......
+....NN.......
+....NN.......
+....NN.......
+...NNN.......
+...NNNN......
+..NNNNNN.....
+"""
+
+GRAVE_LEG = {"T": "#6E6A80", "t": "#3E3A50"}
+TOMB_A = """
+.TTT.
+TTTTT
+TTtTT
+TTTTT
+TTtTT
+TTTTT
+"""
+TOMB_B = """
+.TT.
+TTTT
+TTTT
+TtTT
+TTTT
+"""
+CROSS = """
+..T..
+..T..
+TTTTT
+..T..
+..T..
+..T..
+..T..
+"""
+
+MOON_LEG = {"L": "#FFF0C8", "m": "#D8C89A"}
+MOON = """
+...LLLLL...
+.LLLLLLLLL.
+.LLLLmLLLL.
+LLLLLLLLLLL
+LLmLLLLLmLL
+LLLLLLLLLLL
+LLLLLLmLLLL
+LLLLLLLLLLL
+.LLmLLLLLL.
+.LLLLLLLLL.
+...LLLLL...
+"""
+
+BAT = """
+#..#..#
+#######
+.##.##.
+"""
+
+def fog(c, y, offset):
+    """A row of drifting dashes, in a gray clearly lighter than black so it
+    reads as mist instead of vanishing."""
+    for x in range(EDGEL + offset, RZ_R - 6, 11):
+        c.hline(x, y, 7, "#4A4660")
+
+def title_card(c):
+    """The splash scene. Nothing here depends on the network."""
+    c.sprite(MANSION, EDGEL, 5, legend = MANSION_LEG)
+    # graveyard on the right: a dead tree, three stones, bats across the moon
+    c.sprite(MOON, 172, 2, legend = MOON_LEG)
+    c.sprite(BAT, 174, 6, color = "#100C18")
+    c.sprite(BAT, 166, 3, color = "#6B4F9E")
+    c.sprite(DEAD_TREE, 146, 8, legend = TREE_LEG)
+    c.sprite(TOMB_A, 161, 25, legend = GRAVE_LEG)
+    c.sprite(CROSS, 169, 24, legend = GRAVE_LEG)
+    c.sprite(TOMB_B, 178, 26, legend = GRAVE_LEG)
+    c.hline(144, 31, 42, "#2A2440")
+    fog(c, 30, 0)
+    fog(c, 31, 6)
+
+def chip_row(c, label, chip_color, meta, meta_color):
+    ink = "white" if chip_color in [PURPLE, OFFLINE] else "black"
+    c.badge(label, EDGEL, 0, color = ink, bg = chip_color, font = "4x5")
+    if meta != "":
+        c.text(meta, RZ_R, 1, font = "4x5", color = meta_color, align = "right")
 
 # ---- text kit (identical contract to the sibling app's) -------------------
 def clip(c, text, font, maxw):
@@ -94,14 +238,16 @@ def clean_name(name):
             parts.append(p)
     return " ".join(parts)
 
-# Only the handful of houses with a promotional subtitle ("X Presents: Y")
-# get shortened here, down to the part people actually call the house.
-# Everything else keeps its real name and only clips (at a word boundary)
-# if the column genuinely can't fit it.
+# The name people actually call each house, sized for a wait row: a house
+# gets 66 px beside a 2-digit pill and 62 beside a 3-digit one. Only the
+# houses with a promotional subtitle ("X Presents: Y") or a name wider than
+# a row are shortened; the rest keep their real name. Anything unmatched is
+# clipped at a word boundary.
 HOUSE_NICKS = [
-    ["BLOODENGUTZ", "FRIGHT-TACULAR"], ["ODDFELLOW", "JACK & ODDFELLOW"],
+    ["BLOODENGUTZ", "BLOODENGUTZ"], ["ODDFELLOW", "ODDFELLOW"],
     ["MADLANDS", "MADLANDS"], ["INVASION", "INVASION"],
-    ["OZZY OSBOURNE", "OZZY OSBOURNE"],
+    ["OZZY", "OZZY OSBOURNE"], ["STRANGER THINGS", "STRANGER THINGS"],
+    ["EVIL DEAD", "EVIL DEAD"],
 ]
 
 def house_name(c, raw, room):
@@ -112,7 +258,19 @@ def house_name(c, raw, room):
             break
     if c.text_width(t, "4x5") <= room:
         return t
-    return clip_words(c, t, "4x5", room)
+    # A house name that overflows is cut at its last whole word, whatever
+    # that costs: "STRANGER" reads as a name, "STRANGER THING" reads as a
+    # mistake. Only a single word that overflows is cut mid-word.
+    t = clip(c, t, "4x5", room)
+    sp = t.rfind(" ")
+    if sp > 0:
+        t = t[:sp]
+    for _ in range(3):
+        if len(t) > 0 and t[len(t) - 1] in [":", "-", ",", ".", "&", " ", "'"]:
+            t = t[:len(t) - 1]
+        else:
+            break
+    return t
 
 def get(obj, key, fallback = None):
     if obj == None or type(obj) != "dict":
@@ -236,7 +394,7 @@ def standby(entry):
     return w
 
 def read_hhn(ctx):
-    """Everything both pages draw, display-ready, or {"online": False}."""
+    """Everything the pages draw, display-ready, or {"online": False}."""
     dbg = str(ctx.inputs.get("_debugstate", "")).strip().lower()
     if dbg != "":
         return demo_state(dbg)
@@ -273,7 +431,6 @@ def read_hhn(ctx):
 
     if tonight != None:
         open_abs = epoch_minutes_iso(get(tonight, "openingTime"))
-        close_abs = epoch_minutes_iso(get(tonight, "closingTime"))
         return {
             "online": True, "state": "open" if now_abs >= open_abs else "tonight",
             "hours": [clock(get(tonight, "openingTime")), clock(get(tonight, "closingTime"))],
@@ -327,195 +484,114 @@ def wait_color(w):
     return "red"
 
 # ---- drawing ------------------------------------------------------------------
-def offline_card(c):
-    masthead(c, TITLE, OFFLINE)
-    c.text("HHN DATA UNREACHABLE", MIDX, 14, font = "5x7", color = "amber",
+def meta_for(st):
+    """What the chip row says at the right edge, and in what color."""
+    s = st["state"]
+    if s == "open":
+        return ["OPEN TIL " + st["hours"][1], "green"]
+    if s == "tonight":
+        return ["GATES " + st["hours"][0], ORANGE]
+    if s == "countdown":
+        return ["NEXT " + st["date"], PURPLE]
+    return ["", DIM]
+
+def offline_page(c, label):
+    c.sprite(MANSION_S, ARTX, ARTY, legend = MANSION_LEG)
+    chip_row(c, label, OFFLINE, "", DIM)
+    c.text("HHN DATA UNREACHABLE", MIDX, 11, font = "5x7", color = "amber",
            align = "center")
-    c.text("TRY AGAIN NEXT REFRESH", MIDX, 25, font = "4x5", color = DIM,
+    c.text("WAITS RETURN NEXT REFRESH", MIDX, 23, font = "4x5", color = DIM,
            align = "center")
+
+def splash(c, ctx):
+    c.fill("black")
+    title_card(c)
+    # The name sits over the scene between the mansion and the graveyard,
+    # in HHN orange. Left-aligned as a block so the three lines share an edge.
+    c.text("HALLOWEEN", 48, 4, font = "6x8", color = ORANGE)
+    c.text("HORROR NIGHTS", 48, 14, font = "6x8", color = ORANGE)
+    c.text("UNIVERSAL ORLANDO", 48, 25, font = "4x5", color = DIM)
 
 def tonight(c, ctx):
-    night(c)
+    """One big bold answer: is it on tonight?"""
+    c.fill("black")
     st = read_hhn(ctx)
     if not st["online"]:
-        offline_card(c)
+        offline_page(c, "HORROR NIGHTS")
         return
-
+    c.sprite(MANSION_S, ARTX, ARTY, legend = MANSION_LEG)
+    meta = meta_for(st)
+    chip_row(c, "HORROR NIGHTS", ORANGE, meta[0], meta[1])
     color = STATE_COLOR[st["state"]]
-    masthead(c, TITLE, color)
 
     if st["state"] == "open":
-        c.text("OPEN NOW", MIDX, 9, font = "10x16_bold", color = color,
-               align = "center")
-        c.text("GATES OPEN TIL " + st["hours"][1], MIDX, 27, font = "4x5",
-               color = DIM, align = "center")
+        word, sub = "OPEN NOW", "GATES OPEN TIL " + st["hours"][1]
     elif st["state"] == "tonight":
-        c.text("TONIGHT", MIDX, 9, font = "10x16_bold", color = color,
-               align = "center")
-        c.text("GATES OPEN AT " + st["hours"][0], MIDX, 27, font = "4x5",
-               color = DIM, align = "center")
+        word, sub = "TONIGHT", "GATES OPEN AT " + st["hours"][0]
     elif st["state"] == "countdown":
-        unit = " NIGHT" if st["days"] == 1 else " NIGHTS"
-        c.text(str(st["days"]) + unit, MIDX, 9, font = "10x16_bold",
-               color = color, align = "center")
-        sub = "TIL OPENING - " + st["date"] + " " + st["hours"][0] + "-" + st["hours"][1]
-        c.text(sub, MIDX, 27, font = "4x5", color = DIM, align = "center")
+        word = str(st["days"]) + (" NIGHT" if st["days"] == 1 else " NIGHTS")
+        sub = "TIL OPENING " + st["date"] + " " + st["hours"][0] + "-" + st["hours"][1]
     else:
-        c.text("SEE YOU NEXT FALL", MIDX, 15, font = "6x8", color = color,
-               align = "center")
+        word, sub = "OFF SEASON", "SEE YOU NEXT FALL"
+    # 10x16_bold fills the band: 16 rows at y 9, then the 4x5 line at y 27.
+    # OFF SEASON is 109 px, the widest word, inside the 150 px zone.
+    c.text(word, MIDX, 9, font = "10x16_bold", color = color, align = "center")
+    c.text(sub, MIDX, 27, font = "4x5", color = DIM, align = "center")
 
-# Five houses to a page, as a plain list: two roomy columns of three rows,
-# name left and wait time right in plain colored text - no boxes, no pills.
-# Two columns instead of the original three means each name gets about 50%
-# more width, so most show their real name in full; only the handful with a
-# long promotional subtitle ("X Presents: Y") get shortened to the part
-# people actually call the house, via HOUSE_NICKS below.
-LIST_COLS = 2
-LIST_ROWS = 3
-LIST_GAP = 4
+# Five houses to a page in two columns of three rows, each with its minutes
+# in a colored pill. The pill is measured first; the name gets what is left.
+COLS = 2
+ROWS = 3
+GAP = 4
 
 def house_row(c, x0, colw, y, w, name):
-    mins = (str(w) + "M") if w != None else "-"
+    mins = (str(w) + "M") if w != None else "--"
     col = wait_color(w)
-    mw = c.text_width(mins, "4x5")
-    c.text(mins, x0 + colw - mw, y, font = "4x5", color = col)
-    c.text(house_name(c, name, colw - mw - 4), x0, y, font = "4x5", color = INK)
+    pw = c.text_width(mins, "4x5") + 4
+    px = x0 + colw - pw
+    c.badge(mins, px, y, color = "white" if col in ["red", DIM] else "black",
+            bg = col if w != None else "#252525", font = "4x5")
+    c.text(house_name(c, name, px - 3 - x0), x0, y + 1, font = "4x5", color = INK)
 
-def house_cards(c, ctx, title, lo, hi):
-    night(c)
+def house_cards(c, ctx, label, lo, hi, which):
+    c.fill("black")
     st = read_hhn(ctx)
     if not st["online"]:
-        masthead(c, title, OFFLINE)
-        c.text("HHN DATA UNREACHABLE", MIDX, 14, font = "5x7", color = "amber",
-               align = "center")
-        c.text("TRY AGAIN NEXT REFRESH", MIDX, 25, font = "4x5", color = DIM,
-               align = "center")
+        offline_page(c, label)
         return
 
     page = st["houses"][lo:hi]
     if st["state"] == "open" and len(page) > 0:
-        masthead(c, title + "  -  TIL " + st["hours"][1], STATE_COLOR["open"])
-        colw = (RZ_R - EDGEL + 1 - LIST_GAP * (LIST_COLS - 1)) // LIST_COLS
-        for i, row in enumerate(page):
-            col = i // LIST_ROWS
-            slot = i % LIST_ROWS
-            x0 = EDGEL + col * (colw + LIST_GAP)
-            y = 10 + slot * 8   # 3px clear of the masthead, not touching it
-            house_row(c, x0, colw, y, row[0], row[1])
+        chip_row(c, label, ORANGE, which + "  TIL " + st["hours"][1], DIM)
+        colw = (RZ_R - EDGEL + 1 - GAP * (COLS - 1)) // COLS
+        c.vline(EDGEL + colw + GAP // 2 - 1, 9, 22, STRUCT)
+        for i in range(len(page)):
+            col = i // ROWS
+            slot = i % ROWS
+            x0 = EDGEL + col * (colw + GAP)
+            y = 8 + slot * 8
+            house_row(c, x0, colw, y, page[i][0], page[i][1])
+        return
+
+    # No wait grid to show: keep the mansion, say when the gates open.
+    c.sprite(MANSION_S, ARTX, ARTY, legend = MANSION_LEG)
+    meta = meta_for(st)
+    chip_row(c, label, ORANGE, meta[0], meta[1])
+    if st["state"] == "open":
+        head = "WAITS POSTING SOON" if lo == 0 else "THAT'S ALL OF THEM"
+        sub = "CHECK BACK SHORTLY" if lo == 0 else "SEE PAGE 1"
+        head_color = ORANGE
+    elif st["state"] == "tonight":
+        head, sub, head_color = "GATES OPEN AT " + st["hours"][0], "WAITS POST AT OPENING", ORANGE
+    elif st["state"] == "countdown":
+        head, sub, head_color = "NO EVENT TONIGHT", "NEXT NIGHT " + st["date"], PURPLE
     else:
-        # Two lines, evenly split around the middle of the content band
-        # (y8-31): a label at y12, the value at y20, so the block sits with
-        # equal breathing room from the masthead above and the edge below,
-        # instead of crowding one side.
-        color = STATE_COLOR[st["state"]]
-        masthead(c, title, color)
-        if st["state"] == "open":
-            # Gates are open but the feed hasn't posted this page's houses yet
-            # (or, on the second page, there just aren't that many tonight).
-            label = "WAITS POSTING SOON" if lo == 0 else "THAT'S ALL OF THEM"
-            c.text(label, MIDX, 12, font = "4x5", color = DIM, align = "center")
-            c.text("CHECK BACK SHORTLY" if lo == 0 else "SEE PAGE 1", MIDX, 20,
-                   font = "4x5", color = ORANGE, align = "center")
-        elif st["state"] == "tonight":
-            c.text("GATES OPEN AT", MIDX, 12, font = "4x5", color = DIM,
-                   align = "center")
-            c.text(st["hours"][0], MIDX, 20, font = "6x8", color = ORANGE,
-                   align = "center")
-        elif st["state"] == "countdown":
-            c.text("NO EVENT TONIGHT", MIDX, 12, font = "4x5", color = DIM,
-                   align = "center")
-            c.text("NEXT: " + st["date"], MIDX, 20, font = "6x8", color = ORANGE,
-                   align = "center")
-        else:
-            c.text("HHN RETURNS THIS FALL", MIDX, 16, font = "5x7", color = DIM,
-                   align = "center")
+        head, sub, head_color = "HHN RETURNS THIS FALL", "SEE YOU NEXT SEASON", PURPLE
+    c.text(head, MIDX, 12, font = "5x7", color = head_color, align = "center")
+    c.text(sub, MIDX, 23, font = "4x5", color = DIM, align = "center")
 
 def houses1(c, ctx):
-    house_cards(c, ctx, "HAUNTED HOUSES", 0, 5)
+    house_cards(c, ctx, "HAUNTED HOUSES", 0, 5, "1 OF 2")
 
 def houses2(c, ctx):
-    house_cards(c, ctx, "MORE HOUSES", 5, 10)
-
-# ---- splash: a crooked haunted house on a hill, under a bright moon -------
-# A silhouette drawn in near the background color is invisible on real LED
-# hardware, not moody - so the house is a clearly lighter moonlit gray (not
-# a same-as-background cutout), the moon is bright and high-contrast, and
-# every bat sits over the moon's disc so it reads as a dark shape against
-# something bright, never dark-on-dark.
-MOON = "#FFF6DC"
-IRON = "#5C5578"          # moonlit gray — well clear of the night sky behind it
-HILL = "#241D30"          # a shade of the sky itself, just enough lighter to
-                          # separate the ground from the night behind it
-WINDOW = "#FFD27A"
-BAT = "#100C18"
-FOG = "#6B6485"           # clearly lighter than the sky, so it reads as mist
-                          # instead of vanishing like the first draft's silhouettes did
-
-def hill(c, cx, ground, r, color):
-    """A rounded mound: a circle centered below the panel so only its cap
-    shows, clipped by the canvas edge - cheaper than tracing an arc by hand."""
-    c.fill_circle(cx, ground + r - 5, r, color)
-
-def house(c, x0, base):
-    """A crooked haunted house: a lopsided gabled body, a taller narrow
-    tower with a witch's-hat cap, two lit windows. Built tall on purpose —
-    the title text crosses the middle of the panel, so the roofline needs to
-    clear it on top and the windows need to sit low enough to clear it on
-    the bottom; only the plain stretch of wall in between is meant to hide
-    behind the title, same as a movie poster's logo over its artwork."""
-    bw = 34
-    body_top = base - 9
-    c.rect(x0, body_top, x0 + bw, base, fill = IRON)
-    mid = x0 + bw // 2
-    c.line(x0 - 2, body_top, mid, 5, IRON)
-    c.line(x0 + bw + 2, body_top, mid, 5, IRON)
-
-    tower_top = 9
-    c.rect(x0 + bw - 9, tower_top, x0 + bw - 1, base, fill = IRON)
-    c.line(x0 + bw - 10, tower_top, x0 + bw - 5, tower_top - 6, IRON)
-    c.line(x0 + bw, tower_top, x0 + bw - 5, tower_top - 6, IRON)
-
-    c.pixel(x0 + 8, base - 4, WINDOW)
-    c.pixel(x0 + bw - 5, base - 4, WINDOW)
-
-def bat(c, x, y):
-    c.pixel(x - 2, y, BAT)
-    c.pixel(x - 1, y - 1, BAT)
-    c.pixel(x, y, BAT)
-    c.pixel(x + 1, y - 1, BAT)
-    c.pixel(x + 2, y, BAT)
-
-def fog_bank(c, y, color, step, offset):
-    for x in range(EDGEL + offset, RZ_R, step):
-        c.hline(x, y, step - 3, color)
-
-def splash(c, ctx):
-    night(c)
-    c.fill_circle(152, 16, 10, MOON)
-
-    # Every bat sits well inside the moon's disc (not near its rim) - a wing
-    # tip that spills onto the night sky just vanishes, since both are the
-    # same near-black.
-    bat(c, 149, 13)
-    bat(c, 156, 18)
-    bat(c, 152, 21)
-
-    hill(c, 96, 31, 22, HILL)
-    house(c, 79, 30)
-
-    # Fog rolling in front of the hill's base, two staggered bands so it
-    # reads as drifting layers rather than a single straight line.
-    fog_bank(c, 29, FOG, 11, 0)
-    fog_bank(c, 31, FOG, 11, 6)
-
-    # A true title card: the name sits ON the scene, not on a bar above it.
-    # Stroked in black so it stays legible wherever it crosses the house,
-    # the sky, or the moon. One font throughout each line - no letter drawn
-    # differently from the rest (an earlier font's "A" was a shorter,
-    # curvier glyph than its other capitals; these keep every letter the
-    # same size). "ORLANDO" is its own smaller line underneath because the
-    # full name doesn't fit one line at a readable size on a 192px panel.
-    c.text_stroke("HALLOWEEN HORROR NIGHTS", c.width // 2, 11, font = "6x8",
-                  color = ORANGE, stroke = "black", align = "center")
-    c.text_stroke("ORLANDO", c.width // 2, 23, font = "4x5",
-                  color = ORANGE, stroke = "black", align = "center")
+    house_cards(c, ctx, "MORE HOUSES", 5, 10, "2 OF 2")
