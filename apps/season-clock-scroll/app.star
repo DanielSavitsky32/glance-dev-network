@@ -27,32 +27,44 @@ def days_from_civil(y, m, d):
     return era * 146097 + doe - 719468
 
 
-def offset_hours(ctx):
-    """Real UTC offset for the configured zip, DST already applied.
+# The time zone is a four-way US dropdown resolved right here: no zip lookup
+# and no time API, so every panel in a zone shares one render and a dead API
+# can never cost the clock its offset.
+#
+# zone -> standard offset in minutes east of UTC. All four observe US daylight
+# saving: 2nd Sunday in March 02:00 -> 1st Sunday in November 02:00.
+US_ZONES = {"EASTERN": -300, "CENTRAL": -360, "MOUNTAIN": -420, "PACIFIC": -480,
+            "America/New_York": -300, "America/Chicago": -360,
+            "America/Denver": -420, "America/Los_Angeles": -480}
 
-    Two cached hops: zip -> lat/lon, then lat/lon -> offset. Any failure falls
-    back to UTC, so a dead API costs you the timezone, not the panel."""
-    zip = str(ctx.inputs.get("zip", "")).strip()
-    if zip == "":
-        return 0.0
-    g = http.get("https://api.zippopotam.us/us/" + zip, ttl_seconds = 86400)
-    if g["status_code"] != 200 or not g["json"]:
-        return 0.0
-    places = g["json"].get("places", [])
-    if not places:
-        return 0.0
-    t = http.get(
-        "https://timeapi.io/api/TimeZone/coordinate",
-        params = {"latitude": places[0]["latitude"],
-                  "longitude": places[0]["longitude"]},
-        ttl_seconds = 14400,
-    )
-    if t["status_code"] != 200 or not t["json"]:
-        return 0.0
-    secs = t["json"].get("currentUtcOffset", {}).get("seconds", None)
-    if secs == None:
-        return 0.0
-    return float(secs) / 3600.0
+
+def _dfc(y, m, d):
+    """Days since the Unix epoch (Howard Hinnant's algorithm)."""
+    yy = y - 1 if m <= 2 else y
+    era = (yy if yy >= 0 else yy - 399) // 400
+    yoe = yy - era * 400
+    mp = m - 3 if m > 2 else m + 9
+    doy = (153 * mp + 2) // 5 + d - 1
+    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    return era * 146097 + doe - 719468
+
+
+def _nth_sunday(y, m, n):
+    """Day of the month of the nth Sunday. 1970-01-01 was a Thursday."""
+    wd = (_dfc(y, m, 1) + 4) % 7      # 0 = Sunday
+    return 1 + (7 - wd) % 7 + 7 * (n - 1)
+
+
+def offset_hours(ctx):
+    """UTC offset for the chosen US zone, daylight saving already applied."""
+    zone = str(ctx.inputs.get("timezone", "EASTERN")).strip()
+    std = US_ZONES.get(zone.upper(), US_ZONES.get(zone, -300))
+    t = ctx.now.unix // 60
+    y = ctx.now.year
+    start = _dfc(y, 3, _nth_sunday(y, 3, 2)) * 1440 + 120 - std
+    end = _dfc(y, 11, _nth_sunday(y, 11, 1)) * 1440 + 120 - std - 60
+    off = std + 60 if (t >= start and t < end) else std
+    return off / 60.0
 
 
 def local(ctx):
