@@ -655,9 +655,6 @@ def draw_page(c, ctx, slot):
     tour = tour.strip().upper() if type(tour) == "string" else "ATP"
     if tour not in TOURS:
         tour = "ATP"
-    tid = ctx.inputs.get("tourneyid", "auto")
-    tid = clean(tid) if type(tid) == "string" else ""
-    pinned = tid != "" and tid != "AUTO"
     cfg = TOURS[tour]
 
     data = fetch_feed(cfg["league"])
@@ -669,16 +666,11 @@ def draw_page(c, ctx, slot):
     events = feed_events(data)
     items = []
     for ev in events:
-        if pinned and clean(sget(ev, "id")) != tid:
-            continue
         m = read_match(ev, now, cfg["slug"], tour)
         if m != None:
             items.append(m)
 
     if len(items) == 0:
-        if pinned:
-            nodata(c, "NOT PLAYING", "CHECK THE ID")
-            return
         upcoming = upcoming_events(events, cfg["slug"], tour)
         if len(upcoming) > 0:
             draw_next(c, tour, upcoming[slot % len(upcoming)], now)

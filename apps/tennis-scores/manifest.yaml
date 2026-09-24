@@ -24,10 +24,3 @@ inputs:
       - "ATP"
       - "WTA"
     help: Which tour to follow. ATP is the men's tour, WTA the women's.
-
-  - key: tourneyid
-    type: string
-    app_input_type: free-text
-    label: Tournament
-    default: "auto"
-    help: Leave as auto to follow every event on the chosen tour. Or paste an ESPN event id (e.g. 189-2026, from the tournament's espn.com URL) to show only that one.
