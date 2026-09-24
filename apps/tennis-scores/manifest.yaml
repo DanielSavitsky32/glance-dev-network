@@ -3,14 +3,14 @@ id: tennis-scores
 version: 0.1.0
 name: Tennis Scores
 author: DanielSavitsky32
-description: Live and recently completed ATP or WTA singles scores from a chosen tournament, with set-by-set scores, server indicator, and suspended-match highlighting.
+description: Live ATP or WTA singles scores, one match per page - set-by-set scores, the server, the round, today's results and what's up next.
 category: Sports
 entry: app.star
 
 width: 64
 height: 32
 
-refresh: 60
+refresh: 300
 
 pages: [p1, p2, p3, p4, p5, p6, p7, p8]
 
@@ -30,4 +30,4 @@ inputs:
     app_input_type: free-text
     label: Tournament
     default: "auto"
-    help: Leave as auto to follow whichever ATP event is running. Or paste an ESPN event id (e.g. 154-2025) to pin one.
+    help: Leave as auto to follow every event on the chosen tour. Or paste an ESPN event id (e.g. 189-2026, from the tournament's espn.com URL) to show only that one.
